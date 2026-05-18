@@ -607,9 +607,10 @@ class InfiniteGridMenu {
   }
 
   resize() {
+    const gl = this.gl;
+    if (!gl) return;
     this.viewportSize = vec2.set(this.viewportSize || vec2.create(), this.canvas.clientWidth, this.canvas.clientHeight);
 
-    const gl = this.gl;
     const needsResize = resizeCanvasToDisplaySize(gl.canvas);
     if (needsResize) {
       gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -619,6 +620,7 @@ class InfiniteGridMenu {
   }
 
   run(time = 0) {
+    if (!this.gl) return;
     this.#deltaTime = Math.min(32, time - this.#time);
     this.#time = time;
     this.#deltaFrames = this.#deltaTime / this.TARGET_FRAME_DURATION;
@@ -634,7 +636,12 @@ class InfiniteGridMenu {
     this.gl = this.canvas.getContext('webgl2', { antialias: true, alpha: false });
     const gl = this.gl;
     if (!gl) {
-      throw new Error('No WebGL 2 context!');
+      this.canvas.style.display = 'none';
+      const fallback = document.createElement('div');
+      fallback.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:#ff758f;font-family:Georgia,serif;font-size:1.2rem;text-align:center;padding:2rem;';
+      fallback.textContent = 'Our memories globe needs a moment to load...';
+      this.canvas.parentElement?.appendChild(fallback);
+      return;
     }
 
     this.viewportSize = vec2.fromValues(this.canvas.clientWidth, this.canvas.clientHeight);
@@ -680,6 +687,8 @@ class InfiniteGridMenu {
     this.DISC_INSTANCE_COUNT = this.icoGeo.vertices.length;
     this.#initDiscInstances(this.DISC_INSTANCE_COUNT);
 
+    if (!gl) return;
+
     this.worldMatrix = mat4.create();
     this.#initTexture();
 
@@ -698,12 +707,17 @@ class InfiniteGridMenu {
 
     const itemCount = Math.max(1, this.items.length);
     this.atlasSize = Math.ceil(Math.sqrt(itemCount));
-    this.cellSize = 512;
+
+    const maxTexSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    const maxAtlasDim = Math.min(maxTexSize, 4096);
+    const dim = this.atlasSize;
+    this.cellSize = Math.min(512, Math.floor(maxAtlasDim / dim));
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-
-    canvas.width = this.atlasSize * this.cellSize;
-    canvas.height = this.atlasSize * this.cellSize;
+    const atlasDim = dim * this.cellSize;
+    canvas.width = atlasDim;
+    canvas.height = atlasDim;
 
     ctx.fillStyle = '#2a1a2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -719,18 +733,25 @@ class InfiniteGridMenu {
     let loadedCount = 0;
     const loadedImages = [];
     const total = this.items.length;
+    const origin = window.location.origin;
 
     if (total === 0) return;
 
     this.items.forEach((item, i) => {
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      const url = item.image;
+      const isExternal = url.startsWith('http') && !url.startsWith(origin);
+      if (isExternal) {
+        img.crossOrigin = 'anonymous';
+      }
       img.onload = () => {
         loadedImages[i] = img;
         done();
       };
-      img.onerror = () => done();
-      img.src = item.image;
+      img.onerror = () => {
+        done();
+      };
+      img.src = url;
     });
 
     const done = () => {
