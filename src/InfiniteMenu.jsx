@@ -698,34 +698,54 @@ class InfiniteGridMenu {
 
     const itemCount = Math.max(1, this.items.length);
     this.atlasSize = Math.ceil(Math.sqrt(itemCount));
+    this.cellSize = 512;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const cellSize = 512;
 
-    canvas.width = this.atlasSize * cellSize;
-    canvas.height = this.atlasSize * cellSize;
+    canvas.width = this.atlasSize * this.cellSize;
+    canvas.height = this.atlasSize * this.cellSize;
 
-    Promise.all(
-      this.items.map(
-        item =>
-          new Promise(resolve => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => resolve(img);
-            img.src = item.image;
-          })
-      )
-    ).then(images => {
-      images.forEach((img, i) => {
-        const x = (i % this.atlasSize) * cellSize;
-        const y = Math.floor(i / this.atlasSize) * cellSize;
-        ctx.drawImage(img, x, y, cellSize, cellSize);
+    ctx.fillStyle = '#2a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    this.#loadTextureImages(ctx, canvas, gl);
+  }
+
+  #loadTextureImages(ctx, canvas, gl) {
+    let loadedCount = 0;
+    const loadedImages = [];
+    const total = this.items.length;
+
+    if (total === 0) return;
+
+    this.items.forEach((item, i) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        loadedImages[i] = img;
+        done();
+      };
+      img.onerror = () => done();
+      img.src = item.image;
+    });
+
+    const done = () => {
+      loadedCount++;
+      if (loadedCount < total) return;
+      loadedImages.forEach((img, i) => {
+        if (!img) return;
+        const x = (i % this.atlasSize) * this.cellSize;
+        const y = Math.floor(i / this.atlasSize) * this.cellSize;
+        ctx.drawImage(img, x, y, this.cellSize, this.cellSize);
       });
-
       gl.bindTexture(gl.TEXTURE_2D, this.tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
       gl.generateMipmap(gl.TEXTURE_2D);
-    });
+    };
   }
 
   #initDiscInstances(count) {

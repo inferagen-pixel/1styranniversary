@@ -87,13 +87,15 @@ export default function App() {
 
   // Generate premium floating hearts & sparkles
   useEffect(() => {
-    const initialHearts = Array.from({ length: 28 }).map((_, i) => ({
+    const isMobile = window.innerWidth < 768;
+    const count = isMobile ? 10 : 28;
+    const initialHearts = Array.from({ length: count }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
-      size: Math.random() * 1.4 + 0.7, // Sizing in rem
+      size: Math.random() * 1.4 + 0.7,
       delay: Math.random() * 8,
-      duration: Math.random() * 12 + 8, // Slow, elegant floating duration
-      type: Math.floor(Math.random() * 4) // Heart & Star variants
+      duration: Math.random() * 12 + 8,
+      type: Math.floor(Math.random() * 4)
     }));
     setHearts(initialHearts);
   }, []);

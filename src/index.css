@@ -184,6 +184,12 @@ body {
   align-items: center;
 }
 
+@media (max-width: 768px) {
+  .menu-viewport {
+    height: 100dvh;
+  }
+}
+
 /* Header Section: Floating Glass Capsules Container */
 .anniversary-header-container {
   position: absolute;
@@ -398,7 +404,10 @@ body {
 
 /* Bottom Interface HUD (Floats on top of WebGL background) */
 .footer-hud {
-  position: relative;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -1072,7 +1081,7 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem));
   }
 
   /* Active Card mobile adjustments */
