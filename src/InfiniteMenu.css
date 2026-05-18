@@ -1,0 +1,19 @@
+#infinite-grid-menu-canvas {
+  cursor: grab;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  outline: none;
+}
+
+#infinite-grid-menu-canvas:active {
+  cursor: grabbing;
+}
+
+/* Disable the default, non-styled raw overlay text elements to prevent layout clutter and text duplication on wide screens */
+.face-title,
+.face-description,
+.action-button {
+  display: none !important;
+}
