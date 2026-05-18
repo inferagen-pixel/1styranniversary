@@ -1,6 +1,38 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Component } from 'react';
 import InfiniteMenu from './InfiniteMenu';
 import { items, videoUrl } from './images';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error) {
+    console.error('App error:', error);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100vh', background: '#050508', color: '#ff758f',
+          fontFamily: 'Georgia, serif', textAlign: 'center', padding: '2rem',
+          flexDirection: 'column', gap: '1rem'
+        }}>
+          <div style={{ fontSize: '2rem' }}>💖</div>
+          <div style={{ fontSize: '1.4rem' }}>Happy 1st Anniversary!</div>
+          <div style={{ color: '#a5aab8', fontSize: '1rem' }}>
+            Swipe to see our beautiful memories
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Premium SVG Heart Component
 function HeartParticle({ type }) {
@@ -158,6 +190,7 @@ export default function App() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="app-container">
       {/* Background Ambient Color Orbs */}
       <div className="orb orb-pink"></div>
@@ -424,5 +457,6 @@ export default function App() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

@@ -636,11 +636,6 @@ class InfiniteGridMenu {
     this.gl = this.canvas.getContext('webgl2', { antialias: true, alpha: false });
     const gl = this.gl;
     if (!gl) {
-      this.canvas.style.display = 'none';
-      const fallback = document.createElement('div');
-      fallback.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;color:#ff758f;font-family:Georgia,serif;font-size:1.2rem;text-align:center;padding:2rem;';
-      fallback.textContent = 'Our memories globe needs a moment to load...';
-      this.canvas.parentElement?.appendChild(fallback);
       return;
     }
 
@@ -955,10 +950,12 @@ export default function InfiniteMenu({ items = [], scale = 1.0, onActiveItemChan
   const canvasRef = useRef(null);
   const [activeItem, setActiveItem] = useState(null);
   const [isMoving, setIsMoving] = useState(false);
+  const [glError, setGlError] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     let sketch;
+    let animationId;
 
     const handleActiveItem = index => {
       const itemIndex = index % items.length;
@@ -970,14 +967,25 @@ export default function InfiniteMenu({ items = [], scale = 1.0, onActiveItemChan
     };
 
     if (canvas) {
-      sketch = new InfiniteGridMenu(
-        canvas,
-        items.length ? items : defaultItems,
-        handleActiveItem,
-        setIsMoving,
-        sk => sk.run(),
-        scale
-      );
+      try {
+        sketch = new InfiniteGridMenu(
+          canvas,
+          items.length ? items : defaultItems,
+          handleActiveItem,
+          setIsMoving,
+          sk => {
+            if (sk.gl) {
+              sk.run();
+            } else {
+              setGlError(true);
+            }
+          },
+          scale
+        );
+      } catch (e) {
+        console.error('WebGL init failed:', e);
+        setGlError(true);
+      }
     }
 
     const handleResize = () => {
@@ -991,6 +999,7 @@ export default function InfiniteMenu({ items = [], scale = 1.0, onActiveItemChan
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (animationId) cancelAnimationFrame(animationId);
     };
   }, [items, scale, onActiveItemChange]);
 
@@ -1005,7 +1014,17 @@ export default function InfiniteMenu({ items = [], scale = 1.0, onActiveItemChan
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <canvas id="infinite-grid-menu-canvas" ref={canvasRef} />
+      {glError ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: '100%', color: '#ff758f', fontFamily: 'Georgia, serif',
+          fontSize: '1.2rem', textAlign: 'center', padding: '2rem'
+        }}>
+          Swipe to explore our beautiful memories
+        </div>
+      ) : (
+        <canvas id="infinite-grid-menu-canvas" ref={canvasRef} />
+      )}
 
       {activeItem && (
         <>
